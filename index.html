@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GFL2 Height Chart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--surface:#fcfcfb;--stage:#f1f0ec;--stage-2:#e6e5df;--panel:#ffffff;--text-1:#0b0b0b;--text-2:#52514e;--text-3:#7a7974;--grid:#dcdbd5;--grid-2:#c9c8c2;--axis:#c9c8c2;--floor:#b9b8b1;--glow:rgba(42,120,214,.10);
+--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--sil:#3f4148;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--surface:#1a1a19;--stage:#121316;--stage-2:#1b1d22;--panel:#24252a;--text-1:#f0efec;--text-2:#c3c2b7;--text-3:#8e8d86;--grid:#24262b;--grid-2:#33363d;--axis:#45453f;--floor:#5a5d66;--glow:rgba(57,135,229,.16);
+--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#008300;--sil:#c9ccd6;color-scheme:dark}}
+:root[data-theme="dark"]{--surface:#1a1a19;--stage:#121316;--stage-2:#1b1d22;--panel:#24252a;--text-1:#f0efec;--text-2:#c3c2b7;--text-3:#8e8d86;--grid:#24262b;--grid-2:#33363d;--axis:#45453f;--floor:#5a5d66;--glow:rgba(57,135,229,.16);
+--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#008300;--sil:#c9ccd6;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface);color:var(--text-1);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{padding:24px 16px 40px}
+.disp{font-family:Rajdhani,"Bahnschrift","Segoe UI",sans-serif}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:14px}
+h1{font-size:34px;line-height:1;margin:0;letter-spacing:.06em;text-transform:uppercase;font-weight:700}
+h1 small{display:block;font-size:13px;letter-spacing:.24em;color:var(--text-3);font-weight:600;margin-bottom:6px}
+.sub{color:var(--text-2);margin:8px 0 0;max-width:820px}
+.bar{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center;margin-bottom:12px}
+.seg{display:inline-flex;border:1px solid var(--axis);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--text-2);padding:6px 12px;font:inherit;cursor:pointer}
+.seg button+button{border-left:1px solid var(--axis)}
+.seg button[aria-pressed="true"]{background:var(--panel);color:var(--text-1);font-weight:600}
+.seg.lang{align-self:flex-start;flex-wrap:wrap}.seg.lang button{padding:10px 18px;font-size:16px;white-space:nowrap}
+@media (max-width:600px){.seg.lang button{padding:8px 11px;font-size:14px}h1{font-size:28px}}
+label.chk{display:inline-flex;gap:6px;align-items:center;color:var(--text-2);cursor:pointer}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;color:var(--text-2);font-size:13px;margin-bottom:12px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.hidden{display:none!important}
+/* lineup */
+.stage{position:relative;border-radius:12px;overflow:hidden;background:radial-gradient(120% 80% at 50% 0%,var(--glow),transparent 60%),linear-gradient(var(--stage),var(--stage-2));border:1px solid var(--grid)}
+.lscroll{overflow-x:auto;overflow-y:hidden;position:relative}
+.lscroll::-webkit-scrollbar{height:10px}.lscroll::-webkit-scrollbar-thumb{background:var(--grid-2);border-radius:5px}
+.track{position:relative}
+.stage+.stage{margin-top:14px}
+.gl{position:absolute;left:0;right:0;height:1px;background:var(--grid)}
+.gl.major{background:var(--grid-2)}
+.floor{position:absolute;left:0;right:0;height:2px;background:var(--floor)}
+.floorfade{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,var(--stage-2) 30%)}
+.ruler{position:absolute;left:0;top:0;bottom:0;width:58px;pointer-events:none;z-index:500;background:linear-gradient(90deg,var(--stage) 55%,transparent)}
+.ruler div{position:absolute;left:8px;font:600 12px/1 Rajdhani,"Bahnschrift",sans-serif;color:var(--text-3);transform:translateY(-50%);letter-spacing:.04em}
+.fig{position:absolute;overflow:hidden;pointer-events:none;transition:opacity .2s,filter .2s;
+ -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent),linear-gradient(#000 calc(100% - 12px),transparent);-webkit-mask-composite:source-in;
+ mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent),linear-gradient(#000 calc(100% - 12px),transparent);mask-composite:intersect}
+.fig.full{-webkit-mask-image:linear-gradient(#000 calc(100% - 12px),transparent);mask-image:linear-gradient(#000 calc(100% - 12px),transparent)}
+.fig img,.fig svg.s{position:absolute;top:0;display:block;user-select:none}
+.shd{position:absolute;height:16px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.5),transparent);transform:translate(-50%,-50%);z-index:5;pointer-events:none}
+.hit{position:absolute;cursor:pointer;z-index:450}
+.dim .fig{opacity:.2;filter:saturate(.25)}
+.dim .fig.on{opacity:1;filter:none}
+.lab{position:absolute;z-index:460;text-align:center;transform:translateX(-50%);white-space:nowrap;pointer-events:none}
+.lab b{display:block;font:700 17px/1 Rajdhani,"Bahnschrift",sans-serif;color:var(--text-1);letter-spacing:.02em}
+.lab span{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;color:var(--text-2);margin-top:3px}
+.lab i{width:7px;height:7px;border-radius:2px;display:inline-block}
+.dim .lab{opacity:.35}.dim .lab.on{opacity:1}
+.hline{position:absolute;left:0;right:0;height:0;border-top:1.5px dashed var(--text-2);pointer-events:none;z-index:600;display:none}
+.hline span{position:absolute;left:66px;top:-22px;font:700 14px/1 Rajdhani,"Bahnschrift",sans-serif;color:var(--text-1);background:var(--panel);border:1px solid var(--axis);border-radius:6px;padding:3px 7px}
+/* bars */
+.wrap{display:flex;border:1px solid var(--grid);border-radius:12px;background:var(--surface)}
+.wrap+.wrap{margin-top:14px}
+.bkey{display:flex;align-items:center;gap:6px;color:var(--text-2);font-size:13px;margin:0 0 10px}.bkey i{width:10px;height:16px;border-radius:3px 3px 0 0;display:inline-block}
+.bkey .sb{background:var(--text-3)}.bkey .db{border:1.5px dashed var(--text-3);border-bottom:0;margin-right:4px}
+.yaxis{flex:0 0 44px}
+.scroll{overflow-x:auto;flex:1}
+svg text{font-family:inherit}
+.plot .ic{transition:transform .35s cubic-bezier(.3,1.4,.5,1)}.plot .ex{opacity:0;transition:opacity .25s}
+/* table */
+#tbl{display:flex;gap:28px;align-items:flex-start}
+#tbl table{flex:1}
+table{border-collapse:collapse;margin-top:4px;font-size:13px}
+th,td{padding:5px 8px;text-align:left;border-bottom:1px solid var(--grid)}
+th{color:var(--text-2);font-weight:600;cursor:pointer;user-select:none}
+td.n{text-align:right;font-variant-numeric:tabular-nums}
+td img,td .ph{width:24px;height:24px;border-radius:50%;vertical-align:middle;margin-right:8px;display:inline-block;background:var(--grid)}
+.tip{position:fixed;pointer-events:none;background:var(--panel);color:var(--text-1);border:1px solid var(--axis);border-radius:8px;padding:8px 10px;font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,.22);display:none;z-index:9999;max-width:270px}
+.tip b{display:block;font:700 17px/1.1 Rajdhani,"Bahnschrift",sans-serif;margin-bottom:3px}
+.tip .m{color:var(--text-2)}
+.foot{color:var(--text-3);font-size:12px;margin:22px 0 0;max-width:900px}
+.notes{color:var(--text-2);font-size:13px;max-width:900px;margin-top:20px;padding-left:18px}
+.notes li{margin:4px 0}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div>
+    <h1 class="disp"><small data-t="game"></small><span data-t="title"></span></h1>
+    <p class="sub" data-t="sub"></p>
+  </div>
+  <div class="seg lang" role="group" aria-label="Language">
+    <button data-lang="en">English</button><button data-lang="ja">日本語</button><button data-lang="ko">한국어</button><button data-lang="zh">简体中文</button><button data-lang="zht">繁體中文</button>
+  </div>
+</header>
+<div class="bar">
+  <div class="seg" role="group" aria-label="View">
+    <button data-view="lineup" aria-pressed="true" data-t="lineup"></button>
+    <button data-view="bars" data-t="bars"></button>
+    <button data-view="table" data-t="table"></button>
+  </div>
+  <div class="seg" role="group" aria-label="Sort">
+    <button data-sort="h" aria-pressed="true" data-t="byh"></button>
+    <button data-sort="frame" data-t="byf"></button>
+    <button data-sort="name" data-t="byn"></button>
+  </div>
+  <label class="chk"><input type="checkbox" id="spo"> <span data-t="spo"></span></label>
+  <label class="chk hidden" id="accl"><input type="checkbox" id="acc"> <span data-t="acc"></span></label>
+</div>
+<div class="legend" id="legend"></div>
+<section id="lineupView">
+  <div id="stages"></div>
+</section>
+<section id="barsView" class="hidden">
+  <p class="bkey"><i class="sb"></i><i class="db"></i><span data-t="key"></span></p>
+  <div id="barRows"></div>
+</section>
+<section id="tableView" class="hidden"><div id="tbl"></div></section>
+<p class="foot" data-t="foot"></p>
+<div class="tip" id="tip"></div>
+</main>
+<script>
+const D=[{"id": 1085, "name": "Igla", "code": "Igla", "h": 184.2, "a": null, "ap": null, "frame": "Unique", "he": 192.3, "sk": 175.9, "hd": 5.3, "ft": 99.8, "ar": 0.6, "cx": 0.5903, "icon": 1, "cn": 1, "n": {"zh": "针", "zht": "針"}}, {"id": null, "name": "Commander (male)", "code": "CommanderMale03", "h": 183.2, "a": null, "ap": null, "frame": "Commander", "he": 186.1, "sk": 176.4, "hd": 0.0, "ft": 100, "ar": 0.3944, "cx": 0.6356, "icon": 1, "n": {"ja": "指揮官（男性）", "ko": "지휘관 (남성)", "zh": "指挥官（男）", "zht": "指揮官（男）"}}, {"id": 1008, "name": "Nemesis", "code": "Nemesis", "h": 181.7, "a": null, "ap": null, "frame": "Extra large", "he": 178.1, "sk": 164.0, "hd": 1.1, "ft": 99, "ar": 0.9722, "cx": 0.5243, "icon": 1, "n": {"ja": "ネメシス", "ko": "네메시스", "zh": "纳美西丝", "zht": "納美西絲"}}, {"id": 1066, "name": "Voymastina", "code": "Voymastina", "h": 181.1, "a": null, "ap": null, "frame": "Unique", "he": 192.3, "sk": 175.3, "hd": 0.0, "ft": 99, "ar": 0.4764, "cx": 0.4563, "icon": 1, "n": {"ja": "ヴォイマスティナ", "ko": "보이마스티나", "zh": "威玛希娜", "zht": "威瑪希娜"}}, {"id": 1069, "name": "Loreley", "code": "Loreley", "h": 172.2, "a": null, "ap": null, "frame": "Extra large", "he": 178.1, "sk": 164.4, "hd": 0.6, "ft": 98, "ar": 0.5944, "cx": 0.6554, "icon": 1, "n": {"ja": "ローレライ", "ko": "로렐라이", "zh": "罗蕾莱", "zht": "羅蕾萊"}}, {"id": 1037, "name": "Ullrid", "code": "Ullrid", "h": 171.9, "a": null, "ap": null, "frame": "Extra large", "he": 178.1, "sk": 164.0, "hd": 13.5, "ft": 86, "ar": 1.0736, "cx": 0.4761, "icon": 1, "n": {"ja": "ウルリド", "ko": "울리드", "zh": "乌尔丽德", "zht": "烏爾麗德"}}, {"id": 1067, "name": "Helen", "code": "Helen", "h": 170.8, "a": null, "ap": null, "frame": "Extra large", "he": 178.1, "sk": 164.6, "hd": 0.0, "ft": 99, "ar": 0.9931, "cx": 0.4804, "icon": 1, "n": {"ja": "ヘレン", "ko": "헬렌", "zh": "海伦", "zht": "海倫"}}, {"id": 1032, "name": "Daiyan", "code": "Daiyan", "h": 170.4, "a": null, "ap": null, "frame": "Extra large", "he": 178.1, "sk": 163.8, "hd": 8.3, "ft": 99, "ar": 0.6944, "cx": 0.646, "icon": 1, "n": {"ja": "黛煙", "ko": "대연", "zh": "黛烟", "zht": "黛煙"}}, {"id": 1075, "name": "Nemesis: Gnosis", "code": "NemesisGnosis", "h": 170.2, "a": null, "ap": null, "frame": "Extra large", "he": 178.1, "sk": 164.0, "hd": 0.0, "ft": 100, "ar": 0.6319, "cx": 0.5879, "icon": 1, "n": {"ja": "ネメシス・グノーシス", "ko": "네메시스·연광", "zh": "纳美西丝·衍光", "zht": "納美西絲·衍光"}}, {"id": 1021, "name": "Peritya", "code": "Peritya", "h": 164.0, "a": 175.7, "ap": "cloth1", "frame": "Extra large", "he": 178.1, "sk": 164.0, "hd": 3.5, "ft": 100, "ar": 0.7139, "cx": 0.571, "icon": 1, "n": {"ja": "ペリティア", "ko": "페리티아", "zh": "佩里缇亚", "zht": "佩里緹亞"}}, {"id": 1017, "name": "Groza", "code": "Groza", "h": 163.2, "a": null, "ap": null, "frame": "Large", "he": 160.5, "sk": 153.9, "hd": 0.0, "ft": 100, "ar": 0.7736, "cx": 0.5162, "icon": 1, "n": {"ja": "グローザ", "ko": "그로자", "zh": "闪电", "zht": "閃電"}}, {"id": 1080, "name": "Asteria", "code": "Asteria", "h": 162.2, "a": null, "ap": null, "frame": "Large", "he": 160.5, "sk": 154.3, "hd": 7.7, "ft": 99.9, "ar": 0.4264, "cx": 0.5114, "icon": 1, "cn": 1, "n": {"zh": "阿斯缇亚", "zht": "阿斯緹亞"}}, {"id": 1065, "name": "Alva", "code": "Alva", "h": 162.0, "a": null, "ap": null, "frame": "Large", "he": 160.5, "sk": 153.4, "hd": 0.0, "ft": 100, "ar": 0.4236, "cx": 0.3951, "icon": 1, "n": {"ja": "アルヴァ", "ko": "앨바", "zh": "埃芙", "zht": "埃芙"}}, {"id": 1042, "name": "Andoris", "code": "Andoris", "h": 161.0, "a": null, "ap": null, "frame": "Large", "he": 160.5, "sk": 153.9, "hd": 0.0, "ft": 100, "ar": 0.5944, "cx": 0.632, "icon": 1, "n": {"ja": "アンドリス", "ko": "안도리스", "zh": "安朵丝", "zht": "安朵絲"}}, {"id": 1073, "name": "Sextans", "code": "Sextans", "h": 160.5, "a": null, "ap": null, "frame": "Large", "he": 160.5, "sk": 153.9, "hd": 5.8, "ft": 100, "ar": 0.6972, "cx": 0.2709, "icon": 1, "n": {"ja": "セクスタンス", "ko": "섹스턴스", "zh": "六分仪", "zht": "六分儀"}}, {"id": 1082, "name": "Cecilia", "code": "Cecilia", "h": 160.5, "a": null, "ap": null, "frame": "Large", "he": 160.5, "sk": 153.5, "hd": 2.8, "ft": 98.5, "ar": 0.5597, "cx": 0.5608, "icon": 1, "cn": 1, "n": {"ja": "セシリア", "ko": "세실리아", "zh": "希丽雅", "zht": "希麗雅"}}, {"id": 1035, "name": "Jiangyu", "code": "Jiangyu", "h": 160.4, "a": 161.5, "ap": "cloth1", "frame": "Large", "he": 160.5, "sk": 153.5, "hd": 2.4, "ft": 100, "ar": 0.9764, "cx": 0.5654, "icon": 1, "n": {"ja": "絳雨", "ko": "강우", "zh": "绛雨", "zht": "絳雨"}}, {"id": 1074, "name": "OTs-14", "code": "OTs14", "h": 160.4, "a": null, "ap": null, "frame": "Large", "he": 160.5, "sk": 153.9, "hd": 0.0, "ft": 100, "ar": 0.4028, "cx": 0.4983, "icon": 1, "n": {"ja": "OTs-14", "ko": "OTs-14", "zh": "格洛利娅", "zht": "格洛利婭"}}, {"id": 1083, "name": "Agent", "code": "Agent", "h": 160.4, "a": 167.2, "ap": "cloth2", "frame": "Large", "he": 160.5, "sk": 153.9, "hd": 2.0, "ft": 99.9, "ar": 0.825, "cx": 0.6128, "icon": 1, "cn": 1, "n": {"zh": "代理人", "zht": "代理人"}}, {"id": 1059, "name": "Lind", "code": "Lind", "h": 160.2, "a": null, "ap": null, "frame": "Medium", "he": 153.1, "sk": 146.6, "hd": 4.2, "ft": 100, "ar": 0.5361, "cx": 0.5363, "icon": 1, "n": {"ja": "リンド", "ko": "린드", "zh": "琳德", "zht": "琳德"}}, {"id": 1079, "name": "Koleda", "code": "Koleda", "h": 159.9, "a": null, "ap": null, "frame": "Large", "he": 160.5, "sk": 154.3, "hd": 0.0, "ft": 100, "ar": 0.4778, "cx": 0.3968, "icon": 1, "n": {"ja": "コレダ", "ko": "콜레다", "zh": "克莱妲", "zht": "克萊妲"}}, {"id": 1034, "name": "Makiatto", "code": "Macqiato", "h": 159.7, "a": null, "ap": null, "frame": "Large", "he": 160.5, "sk": 153.8, "hd": 0.0, "ft": 100, "ar": 0.4486, "cx": 0.5402, "icon": 1, "n": {"ja": "マキアート", "ko": "마키아토", "zh": "玛绮朵", "zht": "瑪綺朵"}}, {"id": null, "name": "Commander (female)", "code": "CommanderFemale03", "h": 159.5, "a": null, "ap": null, "frame": "Commander", "he": 162.6, "sk": 153.3, "hd": 0.3, "ft": 100, "ar": 0.3014, "cx": 0.4124, "icon": 1, "n": {"ja": "指揮官（女性）", "ko": "지휘관 (여성)", "zh": "指挥官（女）", "zht": "指揮官（女）"}}, {"id": 1023, "name": "Dushevnaya", "code": "Dusevnyj", "h": 159.3, "a": null, "ap": null, "frame": "Large", "he": 160.5, "sk": 153.9, "hd": 7.2, "ft": 97, "ar": 0.9403, "cx": 0.5547, "icon": 1, "n": {"ja": "ドゥシェーヴヌイ", "ko": "드셰브니", "zh": "杜莎妮", "zht": "杜莎妮"}}, {"id": 1033, "name": "Mosin-Nagant", "code": "Mosinnagant", "h": 159.2, "a": null, "ap": null, "frame": "Large", "he": 160.5, "sk": 153.9, "hd": 5.7, "ft": 98, "ar": 0.9542, "cx": 0.5313, "icon": 1, "n": {"ja": "モシン・ナガン", "ko": "모신나강", "zh": "莫辛纳甘", "zht": "莫辛納甘"}}, {"id": 1057, "name": "Robella", "code": "Robella", "h": 159.2, "a": null, "ap": null, "frame": "Large", "he": 160.5, "sk": 154.0, "hd": 0.0, "ft": 100, "ar": 0.5847, "cx": 0.5784, "icon": 1, "n": {"ja": "ロベラ", "ko": "로벨라", "zh": "洛贝拉", "zht": "洛貝拉"}}, {"id": 1028, "name": "Centaureissi", "code": "Centaureissi", "h": 159.1, "a": 161.4, "ap": "cloth1", "frame": "Large", "he": 160.5, "sk": 153.8, "hd": 13.2, "ft": 94, "ar": 0.7736, "cx": 0.6921, "icon": 1, "n": {"ja": "センタウレイシー", "ko": "센타우레이시", "zh": "桑朵莱希", "zht": "桑朵萊希"}}, {"id": 1047, "name": "Springfield", "code": "Springfield", "h": 158.5, "a": null, "ap": null, "frame": "Large", "he": 160.5, "sk": 154.0, "hd": 0.0, "ft": 97, "ar": 0.5153, "cx": 0.5889, "icon": 1, "n": {"ja": "「スプリングフィールド」", "ko": "\"스프링필드\"", "zh": "“春田”", "zht": "「春田」"}}, {"id": 1055, "name": "Nikketa", "code": "Nikketa", "h": 156.3, "a": null, "ap": null, "frame": "Medium", "he": 153.1, "sk": 146.5, "hd": 6.5, "ft": 84, "ar": 0.7958, "cx": 0.5401, "icon": 1, "n": {"ja": "ニキータ", "ko": "니키타", "zh": "妮基塔", "zht": "妮基塔"}}, {"id": 1072, "name": "Liushih", "code": "Liushih", "h": 155.0, "a": null, "ap": null, "frame": "Medium", "he": 153.1, "sk": 146.3, "hd": 11.8, "ft": 99, "ar": 0.8667, "cx": 0.6835, "icon": 1, "n": {"ja": "劉蒔", "ko": "류시", "zh": "刘莳", "zht": "劉蒔"}}, {"id": 1001, "name": "Krolik", "code": "Charolic", "h": 154.7, "a": 175.3, "ap": "cloth", "frame": "Large", "he": 160.5, "sk": 154.7, "hd": 0.1, "ft": 94, "ar": 0.6875, "lh": 175.3, "lt": "with ears", "cx": 0.4818, "icon": 1, "n": {"ja": "キャロリック", "ko": "캐롤릭", "zh": "克罗丽科", "zht": "克羅麗科"}}, {"id": 1058, "name": "Lainie", "code": "Lene", "h": 154.5, "a": null, "ap": null, "frame": "Medium", "he": 153.1, "sk": 147.3, "hd": 0.0, "ft": 100, "ar": 0.4889, "cx": 0.4886, "icon": 1, "n": {"ja": "レイニー", "ko": "레이니", "zh": "莱妮", "zht": "萊妮"}}, {"id": 1077, "name": "Mityl", "code": "Mityl", "h": 154.3, "a": null, "ap": null, "frame": "Medium", "he": 153.1, "sk": 146.9, "hd": 1.7, "ft": 100, "ar": 0.5, "cx": 0.4444, "icon": 1, "n": {"ja": "ミティール", "ko": "미틸", "zh": "米蒂尔", "zht": "米蒂爾"}}, {"id": 1025, "name": "Tololo", "code": "Tololo", "h": 154.1, "a": 156.5, "ap": "cloth1", "frame": "Large", "he": 160.5, "sk": 154.1, "hd": 0.0, "ft": 99, "ar": 0.7583, "cx": 0.4158, "icon": 1, "n": {"ja": "トロロ", "ko": "토로로", "zh": "托洛洛", "zht": "托洛洛"}}, {"id": 1029, "name": "Sabrina", "code": "Sabrina", "h": 153.9, "a": null, "ap": null, "frame": "Large", "he": 160.5, "sk": 153.9, "hd": 0.0, "ft": 99, "ar": 0.725, "cx": 0.4952, "icon": 1, "n": {"ja": "サブリナ", "ko": "사브리나", "zh": "塞布丽娜", "zht": "塞布麗娜"}}, {"id": 1048, "name": "Qiuhua", "code": "Qiuhua", "h": 153.8, "a": null, "ap": null, "frame": "Medium", "he": 153.1, "sk": 146.5, "hd": 0.1, "ft": 100, "ar": 0.8486, "cx": 0.5663, "icon": 1, "n": {"ja": "秋樺", "ko": "추화", "zh": "秋桦", "zht": "秋樺"}}, {"id": 1027, "name": "Qiongjiu", "code": "Qiongjiu", "h": 153.6, "a": 156.4, "ap": "cloth1", "frame": "Large", "he": 160.5, "sk": 153.6, "hd": 1.7, "ft": 100, "ar": 0.4444, "cx": 0.5922, "icon": 1, "n": {"ja": "瓊玖", "ko": "경구", "zh": "琼玖", "zht": "瓊玖"}}, {"id": 1052, "name": "Klukai", "code": "Clukay", "h": 153.5, "a": null, "ap": null, "frame": "Medium", "he": 153.1, "sk": 146.6, "hd": 0.0, "ft": 100, "ar": 0.4944, "cx": 0.3624, "icon": 1, "n": {"ja": "クルカイ", "ko": "클루카이", "zh": "可露凯", "zht": "可露凱"}}, {"id": 1062, "name": "Lewis", "code": "Lewis", "h": 153.0, "a": null, "ap": null, "frame": "Medium", "he": 153.1, "sk": 147.3, "hd": 0.0, "ft": 98, "ar": 0.5014, "cx": 0.4557, "icon": 1, "n": {"ja": "ルイス", "ko": "루이스", "zh": "刘易斯", "zht": "路易士"}}, {"id": 1076, "name": "Soppo", "code": "Soppo", "h": 152.7, "a": null, "ap": null, "frame": "Medium", "he": 153.1, "sk": 146.5, "hd": 10.1, "ft": 99, "ar": 0.5597, "cx": 0.5757, "icon": 1, "n": {"ja": "ソップ", "ko": "소프", "zh": "索普", "zht": "索普"}}, {"id": 1045, "name": "Belka", "code": "Biyoca", "h": 152.3, "a": null, "ap": null, "frame": "Medium", "he": 153.1, "sk": 146.6, "hd": 4.4, "ft": 90, "ar": 0.9069, "cx": 0.4985, "icon": 1, "n": {"ja": "ビヨーカ", "ko": "비욜카", "zh": "比悠卡", "zht": "比悠卡"}}, {"id": 1060, "name": "Phaetusa", "code": "Phaetusa", "h": 152.3, "a": 155.0, "ap": "cloth2", "frame": "Medium", "he": 153.1, "sk": 146.6, "hd": 13.0, "ft": 88, "ar": 0.6667, "cx": 0.5292, "icon": 1, "n": {"ja": "パエトゥーサ", "ko": "파에투사", "zh": "翡图萨", "zht": "翡圖薩"}}, {"id": 1044, "name": "Vector", "code": "Vector", "h": 152.2, "a": null, "ap": null, "frame": "Medium", "he": 153.1, "sk": 145.9, "hd": 0.0, "ft": 100, "ar": 0.5431, "cx": 0.5345, "icon": 1, "n": {"ja": "ヴェクター", "ko": "벡터", "zh": "维克托", "zht": "維克托"}}, {"id": 1050, "name": "Zhaohui", "code": "Zhaohui", "h": 152.1, "a": null, "ap": null, "frame": "Medium", "he": 153.1, "sk": 145.9, "hd": 6.0, "ft": 100, "ar": 0.8194, "cx": 0.5153, "icon": 1, "n": {"ja": "朝暉", "ko": "조휘", "zh": "朝晖", "zht": "朝暉"}}, {"id": 1013, "name": "Lenna", "code": "Lenna", "h": 151.8, "a": null, "ap": null, "frame": "Medium", "he": 153.1, "sk": 146.4, "hd": 0.0, "ft": 100, "ar": 0.6361, "cx": 0.4443, "icon": 1, "n": {"ja": "レナ", "ko": "레나", "zh": "莱娜", "zht": "萊娜"}}, {"id": 1056, "name": "Leva", "code": "Leva", "h": 151.6, "a": null, "ap": null, "frame": "Medium", "he": 153.1, "sk": 146.6, "hd": 0.0, "ft": 100, "ar": 0.4722, "cx": 0.5985, "icon": 1, "n": {"ja": "リヴァ", "ko": "리바", "zh": "莱娅", "zht": "萊婭"}}, {"id": 1078, "name": "Faelynn", "code": "Faelynn", "h": 151.6, "a": null, "ap": null, "frame": "Small", "he": 143.1, "sk": 135.0, "hd": 1.1, "ft": 100, "ar": 0.8514, "cx": 0.4527, "icon": 1, "n": {"ja": "フェアリン", "ko": "페일린", "zh": "芙铃", "zht": "芙鈴"}}, {"id": 1036, "name": "Ksenia", "code": "Ksenia", "h": 149.5, "a": null, "ap": null, "frame": "Small", "he": 143.1, "sk": 134.8, "hd": 2.9, "ft": 100, "ar": 0.5167, "cx": 0.5027, "icon": 1, "n": {"ja": "クシーニヤ", "ko": "크세니아", "zh": "科谢尼娅", "zht": "科謝尼婭"}}, {"id": 1043, "name": "Faye", "code": "Faye", "h": 145.5, "a": null, "ap": null, "frame": "Small", "he": 143.1, "sk": 135.0, "hd": 5.3, "ft": 94, "ar": 0.4986, "cx": 0.5056, "icon": 1, "n": {"ja": "緋", "ko": "페이", "zh": "绯", "zht": "緋"}}, {"id": 1061, "name": "Balthilde", "code": "Balthilde", "h": 144.1, "a": null, "ap": null, "frame": "Small", "he": 143.1, "sk": 135.4, "hd": 0.1, "ft": 99, "ar": 0.4472, "cx": 0.5155, "icon": 1, "n": {"ja": "バチルダ", "ko": "바틸다", "zh": "巴希达", "zht": "巴希達"}}, {"id": 1022, "name": "Sharkry", "code": "Sharkry", "h": 143.6, "a": 149.9, "ap": "cloth1", "frame": "Small", "he": 143.1, "sk": 135.0, "hd": 6.9, "ft": 100, "ar": 0.4861, "cx": 0.55, "icon": 1, "n": {"ja": "シャークリー", "ko": "샤크리", "zh": "夏克里", "zht": "夏克里"}}, {"id": 1064, "name": "Florence", "code": "Florence", "h": 143.6, "a": null, "ap": null, "frame": "Small", "he": 143.1, "sk": 135.3, "hd": 0.0, "ft": 100, "ar": 0.8514, "cx": 0.4649, "icon": 1, "n": {"ja": "フローレンス", "ko": "플로렌스", "zh": "芙洛伦", "zht": "芙洛倫"}}, {"id": 1051, "name": "Mechty", "code": "Mishty", "h": 143.5, "a": null, "ap": null, "frame": "Small", "he": 143.1, "sk": 135.4, "hd": 10.8, "ft": 99, "ar": 0.95, "cx": 0.3538, "icon": 1, "n": {"ja": "ミシュティ", "ko": "미슈티", "zh": "米什缇", "zht": "米什緹"}}, {"id": 1038, "name": "Littara", "code": "Littara", "h": 142.2, "a": null, "ap": null, "frame": "Small", "he": 143.1, "sk": 135.8, "hd": 9.7, "ft": 99, "ar": 0.9528, "cx": 0.5241, "icon": 1, "n": {"ja": "リッタラ", "ko": "리타라", "zh": "莉塔拉", "zht": "莉塔拉"}}, {"id": 1081, "name": "Eagletta", "code": "Eagletta", "h": 141.6, "a": 144.7, "ap": "cloth1", "frame": "Small", "he": 143.1, "sk": 135.2, "hd": 13.8, "ft": 99.9, "ar": 0.525, "cx": 0.4735, "icon": 1, "cn": 1, "n": {"zh": "伊格蕾塔", "zht": "伊格蕾塔"}}, {"id": 1009, "name": "Colphne", "code": "Colphne", "h": 141.5, "a": 142.8, "ap": "cloth", "frame": "Small", "he": 143.1, "sk": 135.0, "hd": 0.0, "ft": 100, "ar": 0.3778, "cx": 0.3824, "icon": 1, "n": {"ja": "コルフェン", "ko": "콜펜", "zh": "寇尔芙", "zht": "寇爾芙"}}, {"id": 1084, "name": "Colphne Doppelgänger", "code": "ColphneDoppelgaenger", "h": 141.5, "a": 142.4, "ap": "cloth2", "frame": "Small", "he": 143.1, "sk": 135.0, "hd": 0.0, "ft": 99.9, "ar": 0.7194, "cx": 0.4624, "icon": 1, "cn": 1, "n": {"zh": "寇尔芙·镜刻", "zht": "寇爾芙·鏡刻"}}, {"id": 1039, "name": "Suomi", "code": "Suomi", "h": 141.4, "a": null, "ap": null, "frame": "Small", "he": 143.1, "sk": 135.0, "hd": 11.5, "ft": 99, "ar": 0.5069, "cx": 0.3877, "icon": 1, "n": {"ja": "スオミ", "ko": "수오미", "zh": "索米", "zht": "索米"}}, {"id": 1068, "name": "Sakura", "code": "Sakura", "h": 141.3, "a": null, "ap": null, "frame": "Small", "he": 143.1, "sk": 134.9, "hd": 0.0, "ft": 99, "ar": 0.9569, "cx": 0.4311, "icon": 1, "n": {"ja": "サクラ", "ko": "사쿠라", "zh": "樱花", "zht": "櫻花"}}, {"id": 1070, "name": "Cheyanne", "code": "Cheyanne", "h": 140.9, "a": null, "ap": null, "frame": "Small", "he": 143.1, "sk": 134.8, "hd": 6.7, "ft": 100, "ar": 0.5014, "cx": 0.6108, "icon": 1, "n": {"ja": "シャイアン", "ko": "샤이엔", "zh": "夏安", "zht": "夏安"}}, {"id": 1015, "name": "Vepley", "code": "Vepley", "h": 140.8, "a": null, "ap": null, "frame": "Small", "he": 143.1, "sk": 134.7, "hd": 1.8, "ft": 100, "ar": 0.5583, "cx": 0.4117, "icon": 1, "n": {"ja": "ヴェプリー", "ko": "베프리", "zh": "维普蕾", "zht": "維普蕾"}}, {"id": 1054, "name": "Yoohee", "code": "YooHee", "h": 140.3, "a": null, "ap": null, "frame": "Small", "he": 143.1, "sk": 135.0, "hd": 3.2, "ft": 100, "ar": 0.6653, "cx": 0.5177, "icon": 1, "n": {"ja": "幼熙", "ko": "유희", "zh": "幼熙", "zht": "幼熙"}}, {"id": 1024, "name": "Cheeta", "code": "Cheeta", "h": 139.9, "a": null, "ap": null, "frame": "Small", "he": 143.1, "sk": 135.4, "hd": 5.0, "ft": 100, "ar": 0.3764, "cx": 0.5092, "icon": 1, "n": {"ja": "チータ", "ko": "치타", "zh": "奇塔", "zht": "奇塔"}}, {"id": 1041, "name": "Lotta", "code": "Lotta", "h": 139.9, "a": null, "ap": null, "frame": "Small", "he": 143.1, "sk": 135.0, "hd": 7.5, "ft": 100, "ar": 0.6167, "cx": 0.3604, "icon": 1, "n": {"ja": "ロッタ", "ko": "롯타", "zh": "洛塔", "zht": "洛塔"}}, {"id": 1063, "name": "Welrod", "code": "Welrod", "h": 139.8, "a": null, "ap": null, "frame": "Small", "he": 143.1, "sk": 134.9, "hd": 0.0, "ft": 100, "ar": 0.6319, "cx": 0.5505, "icon": 1, "n": {"ja": "ウェルロッド", "ko": "웰로드", "zh": "维尔德", "zht": "維爾德"}}, {"id": 1040, "name": "Papasha", "code": "Papasha", "h": 139.6, "a": null, "ap": null, "frame": "Small", "he": 143.1, "sk": 135.0, "hd": 0.0, "ft": 100, "ar": 0.4806, "cx": 0.5116, "icon": 1, "n": {"ja": "ペーペーシャ", "ko": "파파샤", "zh": "波波沙", "zht": "波波沙"}}, {"id": 1053, "name": "Peri", "code": "Peri", "h": 139.4, "a": null, "ap": null, "frame": "Small", "he": 143.1, "sk": 135.0, "hd": 0.0, "ft": 100, "ar": 0.6375, "cx": 0.4379, "icon": 1, "n": {"ja": "ペリー", "ko": "페리", "zh": "佩莉", "zht": "佩莉"}}, {"id": 1071, "name": "Basti", "code": "Basti", "h": 139.4, "a": 141.7, "ap": "cloth3", "frame": "Small", "he": 143.1, "sk": 134.7, "hd": 1.4, "ft": 100, "ar": 0.5139, "cx": 0.6257, "icon": 1, "n": {"ja": "バスティ", "ko": "바스티", "zh": "贝丝蒂", "zht": "貝絲蒂"}}, {"id": 1049, "name": "Harpsy", "code": "Harpsy", "h": 139.3, "a": 144.8, "ap": "cloth2", "frame": "Small", "he": 143.1, "sk": 134.1, "hd": 3.9, "ft": 100, "ar": 0.4889, "cx": 0.5312, "icon": 1, "n": {"ja": "ハープシー", "ko": "하프시", "zh": "哈卜茜", "zht": "哈卜茜"}}, {"id": 1026, "name": "Nagant", "code": "Nagant", "h": 135.0, "a": null, "ap": null, "frame": "Small", "he": 143.1, "sk": 135.0, "hd": 4.0, "ft": 100, "ar": 0.4278, "cx": 0.4188, "icon": 1, "n": {"ja": "ナガン", "ko": "나강", "zh": "纳甘", "zht": "納甘"}}];
+const BUILD=1792906319;// changes on every build so the browser reloads edited pictures
+const FR=['Small','Medium','Large','Extra large','Unique','Commander'];
+const FC={Small:'--s1',Medium:'--s2',Large:'--s3','Extra large':'--s4',Unique:'--s5',Commander:'--s6'};
+const NS='http://www.w3.org/2000/svg';
+let sort='h',acc=false,view='lineup';
+const $=id=>document.getElementById(id);
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const el=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p&&p.appendChild(e);return e};
+const fmt=v=>v.toFixed(1)+' cm';
+/* ---------- languages: doll names are the game's own, from its language tables ---------- */
+const STR={
+ en:{spo:'Show CN-server dolls (spoilers)',foot:'Fan-made chart, not affiliated with MICA Team or Sunborn. Character art © MICA Team / Sunborn. Heights measured from the game’s 3D models, October 2026.',key:'Bars run to the top of the hair. Hover a bar: a dotted part shows hats or ears on top.',game:"Girls' Frontline 2: Exilium",title:'Doll height chart',sub:'All {n} playable dolls and the Commander, measured from the 3D models in the game files. Heights run from the floor to the top of the hair, with shoes on. Hover a figure for details.',
+  lineup:'Lineup',bars:'Bars',table:'Table',byh:'By height',byf:'By frame',byn:'By name',acc:'Add hats and ears to the dashed part',
+  fr:{Small:'Small frame',Medium:'Medium frame',Large:'Large frame','Extra large':'Extra large frame',Unique:'Unique frame',Commander:'Commander frames'},
+  frame:f=>(f==='Commander'?'Commander frame':STR.en.fr[f]),height:'Height',acch:'With hat or ears',code:'Model code',mmd:'Official MMD model',
+  cols:['#','Doll','Height (cm)','With hat or ears (cm)','Frame','Model code'],lt:{'with beret':'with beret','with ears':'with ears'}},
+ ja:{spo:'中国版先行の人形を表示（ネタバレ注意）',foot:'ファンメイドの非公式チャートです。MICA Team・Sunborn とは関係ありません。キャラクターイラスト © MICA Team / Sunborn。身長はゲームの3Dモデルから計測（2026年10月時点）。',key:'棒は髪のいちばん上まで。棒にカーソルを合わせると、帽子や耳の分が点線で表示されます。',game:'ドールズフロントライン2：エクシリウム',title:'人形 身長比較チャート',sub:'プレイアブル人形{n}体と指揮官の身長を、ゲームファイル内の3Dモデルから計測しました。床から髪のいちばん上までの高さで、靴を履いた状態です。キャラクターにカーソルを合わせると詳細が表示されます。',
+  lineup:'並び',bars:'棒グラフ',table:'表',byh:'身長順',byf:'骨格順',byn:'名前順',acc:'帽子・耳も点線部分に含める',
+  fr:{Small:'小型骨格',Medium:'中型骨格',Large:'大型骨格','Extra large':'特大骨格',Unique:'固有骨格',Commander:'指揮官の骨格'},
+  frame:f=>STR.ja.fr[f],height:'身長',acch:'帽子・耳込み',code:'モデルコード',mmd:'公式MMDモデル',
+  cols:['#','人形','身長 (cm)','帽子・耳込み (cm)','骨格','モデルコード'],lt:{'with beret':'ベレー帽込み','with ears':'耳込み'}},
+ ko:{spo:'중국 서버 선행 인형 보기 (스포일러 주의)',foot:'팬이 만든 비공식 차트로, MICA Team·Sunborn과 관계없습니다. 캐릭터 일러스트 © MICA Team / Sunborn. 키는 게임의 3D 모델에서 측정했습니다(2026년 10월 기준).',key:'막대는 머리카락 맨 위까지입니다. 막대에 마우스를 올리면 모자나 귀 부분이 점선으로 보입니다.',game:'소녀전선2: 망명',title:'인형 키 비교 차트',sub:'플레이어블 인형 {n}명과 지휘관의 키를 게임 파일 속 3D 모델에서 측정했습니다. 바닥부터 머리카락 맨 위까지의 높이이며, 신발을 신은 상태입니다. 캐릭터에 마우스를 올리면 자세한 정보가 나옵니다.',
+  lineup:'나란히 보기',bars:'막대그래프',table:'표',byh:'키순',byf:'골격순',byn:'이름순',acc:'모자·귀도 점선 부분에 포함',
+  fr:{Small:'소형 골격',Medium:'중형 골격',Large:'대형 골격','Extra large':'특대형 골격',Unique:'전용 골격',Commander:'지휘관 골격'},
+  frame:f=>STR.ko.fr[f],height:'키',acch:'모자·귀 포함',code:'모델 코드',mmd:'공식 MMD 모델',
+  cols:['#','인형','키 (cm)','모자·귀 포함 (cm)','골격','모델 코드'],lt:{'with beret':'베레모 포함','with ears':'귀 포함'}},
+ zh:{spo:'显示国服先行人形（剧透注意）',foot:'粉丝自制的非官方图表，与 MICA Team、散爆网络无关。角色立绘 © MICA Team / 散爆网络。身高测自游戏3D模型（2026年10月）。',key:'柱高量到头发最高处。鼠标悬停在柱上时，帽子或耳朵的部分以虚线显示。',game:'少女前线2：追放',title:'人形身高对比图',sub:'全部{n}名可玩人形与指挥官的身高，均取自游戏文件中的3D模型。身高从地面量到头发最高处，穿鞋。将鼠标悬停在角色上可查看详情。',
+  lineup:'并排',bars:'柱状图',table:'表格',byh:'按身高',byf:'按骨架',byn:'按名字',acc:'虚线部分包含帽子和耳朵',
+  fr:{Small:'小型骨架',Medium:'中型骨架',Large:'大型骨架','Extra large':'特大骨架',Unique:'专属骨架',Commander:'指挥官骨架'},
+  frame:f=>STR.zh.fr[f],height:'身高',acch:'含帽子或耳朵',code:'模型代号',mmd:'官方MMD模型',
+  cols:['#','人形','身高 (cm)','含帽子或耳朵 (cm)','骨架','模型代号'],lt:{'with beret':'含贝雷帽','with ears':'含耳朵'}},
+ zht:{spo:'顯示國服先行人形（劇透注意）',foot:'粉絲自製的非官方圖表，與 MICA Team、散爆網路無關。角色立繪 © MICA Team / 散爆網路。身高測自遊戲3D模型（2026年10月）。',key:'柱高量到頭髮最高處。滑鼠停在柱上時，帽子或耳朵的部分以虛線顯示。',game:'少女前線2：追放',title:'人形身高對比圖',sub:'全部{n}名可玩人形與指揮官的身高，均取自遊戲檔案中的3D模型。身高從地面量到頭髮最高處，穿鞋。將滑鼠停在角色上可查看詳情。',
+  lineup:'並排',bars:'長條圖',table:'表格',byh:'按身高',byf:'按骨架',byn:'按名字',acc:'虛線部分包含帽子和耳朵',
+  fr:{Small:'小型骨架',Medium:'中型骨架',Large:'大型骨架','Extra large':'特大骨架',Unique:'專屬骨架',Commander:'指揮官骨架'},
+  frame:f=>STR.zht.fr[f],height:'身高',acch:'含帽子或耳朵',code:'模型代號',mmd:'官方MMD模型',
+  cols:['#','人形','身高 (cm)','含帽子或耳朵 (cm)','骨架','模型代號'],lt:{'with beret':'含貝雷帽','with ears':'含耳朵'}}};
+let lang=(()=>{try{const v=localStorage.getItem('gfl2h-lang');if(STR[v])return v}catch(e){}const n=(navigator.language||'').toLowerCase();
+  return n.startsWith('ja')?'ja':n.startsWith('ko')?'ko':/^zh-(tw|hk|mo|hant)/.test(n)?'zht':n.startsWith('zh')?'zh':'en'})();
+let spoil=(()=>{try{return localStorage.getItem('gfl2h-spoil')==='1'}catch(e){return false}})();
+const DD=()=>D.filter(d=>spoil||!d.cn);// dolls on the global server, plus the CN-server ones when spoilers are on
+const S=()=>STR[lang], nm=d=>(lang!=='en'&&d.n&&d.n[lang])||d.name;
+function applyLang(){document.documentElement.lang={en:'en',ja:'ja',ko:'ko',zh:'zh-Hans',zht:'zh-Hant'}[lang];
+  document.querySelectorAll('[data-t]').forEach(e=>e.textContent=S()[e.dataset.t].replace('{n}',DD().filter(d=>d.frame!=='Commander').length));document.title=S().title;
+  document.querySelectorAll('[data-lang]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.lang===lang));
+  $('legend').innerHTML=FR.map(f=>{const n=DD().filter(d=>d.frame===f).length;return n?`<span><i style="background:var(${FC[f]})"></i>${S().fr[f]} (${n})</span>`:''}).join('')}
+function order(){const a=DD();
+  if(sort==='h')a.sort((x,y)=>y.h-x.h);
+  if(sort==='name')a.sort((x,y)=>nm(x).localeCompare(nm(y),{zht:'zh-Hant',zh:'zh-Hans'}[lang]||lang));
+  if(sort==='frame')a.sort((x,y)=>FR.indexOf(y.frame)-FR.indexOf(x.frame)||y.h-x.h);
+  return a}
+const T=$('tip');
+function tip(e,d){const s=S();T.innerHTML=`<b>${nm(d)}</b>${s.height} ${fmt(d.h)}`+(d.a?`<br>${s.acch} ${fmt(d.a)}`:'')+`<br><span class="m">${s.frame(d.frame)}<br>${d.mmd?s.mmd:s.code+' '+d.code}</span>`;
+  T.style.display='block';const r=T.getBoundingClientRect();let x=e.clientX+16,y=e.clientY+16;if(x+r.width>innerWidth-8)x=e.clientX-r.width-16;if(y+r.height>innerHeight-8)y=e.clientY-r.height-16;T.style.left=x+'px';T.style.top=y+'px'}
+const hideTip=()=>T.style.display='none';
+
+/* ---------- lineup ---------- */
+const SIL={ // silhouettes, viewBox height 400 = head top to sole
+ m:{w:120,d:'M60 1C47 1 39 11 39 26C39 41 47 52 60 52C73 52 81 41 81 26C81 11 73 1 60 1ZM46 57H74L77 64Q99 67 104 82L110 202Q110 213 101 213H96L92 122L90 252L86 397H64L61 262H59L56 397H34L30 252L28 122L24 213H19Q10 213 10 202L16 82Q21 67 43 64Z'},
+ f:{w:110,d:'M55 2C41 2 33 13 33 28C33 40 31 70 30 112L40 112C44 60 48 54 55 54C62 54 66 60 70 112L80 112C79 70 77 40 77 28C77 13 69 2 55 2ZM55 6C44 6 38 15 38 28C38 41 45 50 55 50C65 50 72 41 72 28C72 15 66 6 55 6ZM44 57H66L68 64Q87 68 90 81L96 196Q96 207 89 207H85L81 122L80 172Q90 236 85 252L80 397H61L57 262H53L49 397H30L25 252Q20 236 30 172L29 122L25 207H21Q14 207 14 196L20 81Q23 68 42 64Z'}
+};
+function lineup(){// the lineup is cut into rows that each fit the page width, stacked one under another
+  const a=order(),box=$('stages');box.innerHTML='';
+  const H=Math.max(460,Math.min(880,innerHeight-190));
+  const TOPCM=200,PAD_T=18,LAB=56,PX=(H-PAD_T-LAB)/TOPCM,FLOOR=PAD_T+TOPCM*PX;
+  const Y=cm=>FLOOR-cm*PX, step=d=>Math.max(64,d.h*PX*0.34), win=step;// each figure is cut to its own column, so neighbours never overlap
+  const avail=Math.max(300,box.clientWidth-62-step(a[0])-20);let row=[],w=0;// fill each row until the next figure would overflow
+  a.forEach(d=>{const g=row.length?(step(row[row.length-1])+step(d))/2:0;if(row.length&&w+g>avail){stageRow(row);row=[];w=0}else w+=g;row.push(d)});
+  if(row.length)stageRow(row);
+  function stageRow(a){
+  const stage=document.createElement('div');stage.className='stage';stage.style.height=H+'px';
+  stage.innerHTML='<div class="lscroll"><div class="track"></div></div><div class="ruler"></div><div class="hline"><span></span></div>';box.appendChild(stage);
+  const track=stage.querySelector('.track'),ruler=stage.querySelector('.ruler'),hl=stage.querySelector('.hline');
+  let x=62+step(a[0])/2;const pos=[];// first column starts right of the ruler
+  a.forEach((d,i)=>{if(i)x+=(step(a[i-1])+step(d))/2;pos.push(x)});
+  const W=x+120;track.style.width=W+'px';track.style.height=H+'px';
+  const add=(cls,st,html)=>{const e=document.createElement('div');e.className=cls;Object.assign(e.style,st);if(html)e.innerHTML=html;track.appendChild(e);return e};
+  for(let c=10;c<=TOPCM;c+=10)add('gl'+(c%50===0?' major':''),{top:Y(c)+'px'});
+  for(let c=10;c<=TOPCM;c+=10){const l=document.createElement('div');l.style.top=Y(c)+'px';l.textContent=c+(c===TOPCM?' cm':'');ruler.appendChild(l)}
+  add('floor',{top:FLOOR+'px'});add('floorfade',{top:(FLOOR+2)+'px'});
+  a.forEach((d,i)=>{
+    const cx=pos[i],col=`var(${FC[d.frame]})`,LH=d.lh||d.h;let dh,dw,top,node,imgL;
+    if(d.sil){const s=SIL[d.sil];dh=d.h*PX;dw=dh*s.w/400;top=Y(d.h);imgL=cx-dw/2;
+      node=el('svg',{class:'s',viewBox:`0 0 ${s.w} 400`,width:dw,height:dh});
+      const gid='sg'+d.sil;const gr=el('linearGradient',{id:gid,x1:0,y1:0,x2:0,y2:1},el('defs',{},node));
+      el('stop',{offset:0,'stop-color':css('--sil'),'stop-opacity':.95},gr);el('stop',{offset:1,'stop-color':css('--sil'),'stop-opacity':.55},gr);
+      el('path',{d:s.d,fill:`url(#${gid})`,'fill-rule':'evenodd',stroke:css('--s6'),'stroke-width':400/dh*1.5,'stroke-opacity':.8},node);
+    }else if(d.hd!=null){// head top (hd %) pinned to the measured height; a posed figure (sp) keeps its scale and may lift off the floor
+      dh=LH*PX/((d.sp||d.ft-d.hd)/100);dw=dh*d.ar;top=Y(LH)-dh*d.hd/100;imgL=cx-(d.cx??.5)*dw;
+      node=document.createElement('img');node.src='art/'+d.code+'.webp?v='+BUILD;node.alt=nm(d);node.decoding='async';node.style.width=dw+'px';node.style.height=dh+'px';
+    }else return;
+    const ww=d.sil?dw*2:win(d);
+    const f=add('fig',{top:top+'px',height:(FLOOR+6-top)+'px',zIndex:10+i});f.appendChild(node);
+    const narrow=()=>{f.classList.remove('full');f.style.left=(cx-ww/2)+'px';f.style.width=ww+'px';node.style.left=(imgL-(cx-ww/2))+'px'};
+    const wide=()=>{f.classList.add('full');f.style.left=imgL+'px';f.style.width=dw+'px';node.style.left='0px'};
+    narrow();
+    add('shd',{left:cx+'px',top:FLOOR+'px',width:Math.min(ww*.55,d.h*PX*.3)+'px'});
+    const lab=add('lab',{left:cx+'px',top:(FLOOR+10)+'px'},`<b>${d.h.toFixed(1)}</b><span><i style="background:${col}"></i>${nm(d)}</span>`);
+    const sw=step(d),hit=add('hit',{left:(cx-sw/2)+'px',width:sw+'px',top:(Y(LH)-14)+'px',height:(FLOOR-Y(LH)+14+LAB)+'px'});
+    hit.addEventListener('mouseenter',()=>{wide();stage.classList.add('dim');f.classList.add('on');lab.classList.add('on');f.style.zIndex=400;
+      hl.style.display='block';hl.style.top=Y(LH)+'px';hl.querySelector('span').textContent=`${nm(d)}  ${LH.toFixed(1)} cm${d.lt?' '+S().lt[d.lt]:''}`});
+    hit.addEventListener('mousemove',e=>tip(e,d));
+    hit.addEventListener('mouseleave',()=>{narrow();stage.classList.remove('dim');f.classList.remove('on');lab.classList.remove('on');f.style.zIndex=10+i;hl.style.display='none';hideTip()});
+  });
+}
+}
+
+/* ---------- bars ---------- */
+const CV=document.createElement('canvas').getContext('2d');
+const tw=(t,fs)=>{CV.font=`${fs}px ${getComputedStyle(document.body).fontFamily}`;return CV.measureText(t).width};// rendered width in px
+function nameLines(N,max=COL-2){// one line if it fits (shrinking a little), else two lines split at a space or middle dot, else mid-word
+  const fit=(L,lo)=>{const w=Math.max(...L.map(t=>tw(t,11)));const fs=Math.min(11,11*max/w);return fs>=lo?{lines:L,fs:Math.floor(fs*10)/10}:null};
+  let r=fit([N],10);if(r)return r;
+  let best=null;for(const m of N.matchAll(/[\s・·:]/g)){const i=m.index,L=[N.slice(0,i+(/\s/.test(N[i])?0:1)).trim(),N.slice(i+1).trim()];
+    if(L[0]&&L[1]){const w=Math.max(tw(L[0],11),tw(L[1],11));if(!best||w<best.w)best={L,w}}}
+  if(best&&(r=fit(best.L,7.5)))return r;
+  const h=Math.ceil(N.length/2),lat=/[A-Za-z]$/.test(N.slice(0,h));
+  if(lat&&(r=fit([N],9)))return r;// Latin words shrink a little; CJK names split instead
+  return fit([N.slice(0,h)+(lat?'-':''),N.slice(h)],0)}
+const PXB=3.2,TOPB=200,PAD_T=26,ICON=36,LABB=44,COL=56;
+const YB=cm=>PAD_T+(TOPB-cm)*PXB, HB=PAD_T+TOPB*PXB+LABB;
+function bars(){// like the lineup, the bars are cut into rows that fit the page width, stacked one under another
+  const box=$('barRows');box.innerHTML='';const all=order();
+  const per=Math.max(6,Math.floor(((box.clientWidth||innerWidth)-44-18-20)/COL)),rows=Math.ceil(all.length/per),n=Math.ceil(all.length/rows);
+  for(let r=0;r<rows;r++)barRow(all.slice(r*n,(r+1)*n),r*n)}
+function barRow(a,i0){const box=$('barRows'),w=document.createElement('div');w.className='wrap';
+  w.innerHTML='<div class="yaxis"><svg width="44"></svg></div><div class="scroll"><svg class="plot"></svg></div>';box.appendChild(w);
+  const ax=w.querySelector('.yaxis svg'),s=w.querySelector('.plot'),W=a.length*COL+16;ax.setAttribute('height',HB);
+  for(let c=0;c<=TOPB;c+=10)el('text',{x:38,y:YB(c)+4,'text-anchor':'end','font-size':11,fill:css('--text-3')},ax).textContent=c+(c===TOPB?' cm':'');
+  s.setAttribute('width',W);s.setAttribute('height',HB);
+  for(let c=0;c<=TOPB;c+=10)el('line',{x1:0,x2:W,y1:YB(c),y2:YB(c),stroke:css(c===0?'--axis':'--grid'),'stroke-width':1},s);
+  a.forEach((d,j)=>{const i=i0+j,cx=8+j*COL+COL/2,col=css(FC[d.frame]),g=el('g',{},s);
+    const body=d.h,top=d.a||d.h;// solid bar to the top of the hair, dashed bar for a hat or ears above it
+    const ex=el('g',{class:'ex'},g);// hat or ears, shown on hover
+    if(top-body>=.5){el('path',{d:`M${cx-7},${YB(body)}V${YB(top)+4}q0,-4 4,-4h6q4,0 4,4V${YB(body)}Z`,fill:col,'fill-opacity':.12,stroke:col,'stroke-width':1.5,'stroke-dasharray':'3 3'},ex);
+      el('text',{x:cx+10,y:YB(top)+9,'font-size':9.5,fill:css('--text-3')},ex).textContent='+'+(top-body).toFixed(0)}
+    el('path',{d:`M${cx-7},${YB(0)}V${YB(body)+4}q0,-4 4,-4h6q4,0 4,4V${YB(0)}Z`,fill:col},g);
+    const iy=YB(body)-ICON-4,ic=el('g',{class:'ic'},g);// icon sits on the solid bar and rises to the hat or ear top on hover
+    el('circle',{cx,cy:iy+ICON/2,r:ICON/2+2,fill:css('--surface'),stroke:col,'stroke-width':2},ic);
+    if(d.icon){el('clipPath',{id:'c'+i},ic).appendChild(el('circle',{cx,cy:iy+ICON/2,r:ICON/2}));
+      el('image',{href:'img/'+d.code+'.png?v='+BUILD,x:cx-ICON/2,y:iy,width:ICON,height:ICON,'clip-path':`url(#c${i})`},ic)}
+    else if(d.sil){const sp=SIL[d.sil],sc=(ICON-8)/400;const gg=el('g',{transform:`translate(${cx-sp.w*sc/2},${iy+4}) scale(${sc})`},ic);el('path',{d:sp.d,fill:css('--sil'),'fill-rule':'evenodd'},gg)}
+    const num=el('text',{x:cx,y:iy-5,'text-anchor':'middle','font-size':11,'font-weight':600,fill:css('--text-1')},ic);num.textContent=body.toFixed(0);
+    const L=nameLines(nm(d));L.lines.forEach((w,k)=>el('text',{x:cx,y:YB(0)+15+k*13,'text-anchor':'middle','font-size':L.fs,fill:css('--text-2')},g).textContent=w);
+    el('rect',{x:cx-COL/2,y:0,width:COL,height:HB,fill:'transparent'},g);
+    const up=YB(top)-YB(body);g.addEventListener('mouseenter',()=>{ic.style.transform=`translateY(${up}px)`;ex.style.opacity=1;num.textContent=top.toFixed(0)});
+    g.addEventListener('mousemove',e=>tip(e,d));g.addEventListener('mouseleave',()=>{ic.style.transform='';ex.style.opacity=0;num.textContent=body.toFixed(0);hideTip()});
+  })}
+
+/* ---------- table ---------- */
+let tk='h',td=-1;
+function table(){const s=S(),val=(d,k)=>k==='name'?nm(d):d[k];const a=DD().sort((x,y)=>{const u=val(x,tk),v=val(y,tk);return (typeof u==='number'||u==null?((u??0)-(v??0)):String(u).localeCompare(String(v)))*td});
+  const C=['name','h','a','frame','code'].map((k,i)=>[k,s.cols[i+1]]);
+  const head=`<thead><tr><th>${s.cols[0]}</th>`+C.map(c=>`<th data-k="${c[0]}">${c[1]}${tk===c[0]?(td<0?' ▼':' ▲'):''}</th>`).join('')+'</tr></thead>';
+  const row=(d,i)=>`<tr><td class="n">${i+1}</td><td>${d.icon?`<img src="img/${d.code}.png?v=${BUILD}" alt="">`:'<span class="ph"></span>'}${nm(d)}</td><td class="n">${d.h.toFixed(1)}</td><td class="n">${d.a?d.a.toFixed(1):''}</td><td>${s.fr[d.frame].replace(/s$/,'')}</td><td>${d.code}</td></tr>`;
+  const k=Math.max(1,Math.floor(($('tbl').clientWidth||innerWidth)/700)),per=Math.ceil(a.length/k);// the list continues in side-by-side tables
+  $('tbl').innerHTML=Array.from({length:k},(_,j)=>'<table>'+head+'<tbody>'+a.slice(j*per,(j+1)*per).map((d,i)=>row(d,j*per+i)).join('')+'</tbody></table>').join('');
+  document.querySelectorAll('#tbl th[data-k]').forEach(th=>th.onclick=()=>{const k=th.dataset.k;td=tk===k?-td:(k==='name'||k==='frame'||k==='code'?1:-1);tk=k;table()})}
+
+function render(){if(view==='lineup')lineup();if(view==='bars')bars()}
+document.querySelectorAll('[data-sort]').forEach(b=>b.onclick=()=>{sort=b.dataset.sort;document.querySelectorAll('[data-sort]').forEach(x=>x.setAttribute('aria-pressed',x===b));render()});
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{view=b.dataset.view;document.querySelectorAll('[data-view]').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  for(const v of ['lineup','bars','table'])$(v+'View').classList.toggle('hidden',v!==view);view==='table'&&table();render()});
+$('acc').onchange=e=>{acc=e.target.checked;bars()};
+$('spo').checked=spoil;$('spo').onchange=e=>{spoil=e.target.checked;try{localStorage.setItem('gfl2h-spoil',spoil?'1':'0')}catch(x){}applyLang();render();table()};
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',render);
+let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{view==='lineup'&&lineup();view==='bars'&&bars();view==='table'&&table()},150)});
+document.querySelectorAll('[data-lang]').forEach(b=>b.onclick=()=>{lang=b.dataset.lang;try{localStorage.setItem('gfl2h-lang',lang)}catch(e){}applyLang();render();table()});
+applyLang();lineup();table();
+</script>
+</body>
+</html>
